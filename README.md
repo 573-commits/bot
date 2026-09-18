@@ -13,6 +13,7 @@ bez serveru, bez účtu, bez instalace.
 - **sledování postupu** – co ti jde, co ne, kolik jsi toho odcvičil, kolik dní v řadě
 - **režim „slabá místa“** – appka sama vybírá témata, kde nejvíc plaveš
 - **claymorphism vzhled**, světlý i tmavý režim
+- **synchronizace mezi zařízeními** – stejný postup na notebooku i na mobilu
 - funguje **offline** (PWA) a jde ji přidat na plochu telefonu
 
 ---
@@ -45,7 +46,7 @@ nefunguje, protože prohlížeč blokuje ES moduly na `file://`.)
 | **Domů** | dnešní statistika, rychlý start, přehled slabých a silných míst |
 | **Témata** | výběr témat do tréninku, filtr podle kategorie, „trénovat jen tohle“ |
 | **Trénink** | samotné úlohy, nápovědy, postup, vizualizace |
-| **Postup** | statistiky podle témat, posledních 14 dní, export/import/reset dat |
+| **Postup** | statistiky podle témat, posledních 14 dní, synchronizace, export/import/reset dat |
 
 **Zápis odpovědí**
 
@@ -78,11 +79,23 @@ Každé téma má vlastní úroveň (1 = nejlehčí). Postup se počítá zvlá�
 
 ---
 
-## Kde jsou data
+## Kde jsou data a jak se synchronizují
 
-Všechno je v `localStorage` prohlížeče pod klíčem `mathgym.v1` – nikam se nic neposílá.
-To znamená, že **mobil a notebook mají každý vlastní postup**. Přenést ho lze
-v *Postup → Exportovat postup* a na druhém zařízení *Importovat postup*.
+Postup se ukládá do `localStorage` prohlížeče pod klíčem `mathgym.v2`, a to jako
+**seznam událostí** – každý vyřešený příklad je samostatný záznam s vlastním
+identifikátorem. Statistiky i úroveň v každém tématu se z těch záznamů dopočítávají.
+
+Díky tomu je propojení dvou zařízení jen sjednocení množin: **postup se slučuje,
+nepřepisuje**. Můžeš cvičit offline na mobilu i na notebooku a po připojení se
+obojí sečte. Opakovaná synchronizace nikdy nic nezdvojí.
+
+Přenos zajišťuje **soukromý GitHub Gist** – žádný vlastní server, žádná další
+registrace. Nastavení zabere asi dvě minuty a je popsané v
+**[docs/SYNCHRONIZACE.md](docs/SYNCHRONIZACE.md)**; ve zkratce: vygeneruješ
+fine-grained token s právem *Gists: Read and write* a vložíš ho v *Postup →
+Synchronizace* na obou zařízeních.
+
+Bez tokenu to jde taky – *Stáhnout zálohu* / *Načíst zálohu* udělá totéž ručně.
 
 ---
 
@@ -108,13 +121,21 @@ js/core/
   expr.js                  parser odpovědí (zlomky, sqrt, pi, mocniny…)
   checker.js               vyhodnocení odpovědi podle typu
   plot.js                  vizualizace → inline SVG
-  store.js                 ukládání postupu do localStorage
-  adaptive.js              úrovně, zvládnutí tématu, výběr slabých míst
+  store.js                 event log postupu, odvozené statistiky, slučování
+  sync.js                  synchronizace přes soukromý GitHub Gist
+  adaptive.js              pravidla úrovní, zvládnutí tématu, výběr slabých míst
   mathrender.js            mini-markdown + LaTeX (KaTeX, s textovým záložním režimem)
 js/topics/
   index.js                 registr témat  ← sem se přidává nové téma
   *.js                     jednotlivá témata
 sw.js, manifest.webmanifest  offline režim a instalace na plochu
+```
+
+## Kontrolní skripty
+
+```bash
+node tools/check-topics.mjs     # vygeneruje úlohy ze všech témat a ověří je
+node tools/check-sync.mjs       # ověří slučování postupu a migraci dat
 ```
 
 ## Použité knihovny

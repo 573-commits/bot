@@ -1,6 +1,6 @@
 // Offline cache. Strategie: síť napřed (ať máš vždy nejnovější témata),
 // při výpadku se sáhne do cache.
-const CACHE = 'mathgym-v1';
+const CACHE = 'mathgym-v2';
 const CORE = [
   './', './index.html', './css/clay.css', './manifest.webmanifest',
   './js/app.js', './icons/icon.svg',
@@ -21,15 +21,27 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+
+  // Cizí domény (GitHub API, KaTeX z CDN, fonty) necháváme plně na prohlížeči.
+  // Kdyby je cache obsloužila, dostala by synchronizace místo odpovědi API
+  // uloženou stránku – a spadla by na neplatném JSONu.
+  if (new URL(req.url).origin !== self.location.origin) return;
+
   e.respondWith(
     fetch(req)
       .then((res) => {
-        if (res && res.status === 200 && new URL(req.url).origin === location.origin) {
+        if (res && res.status === 200) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html'))),
+      .catch(async () => {
+        const hit = await caches.match(req);
+        if (hit) return hit;
+        // Náhradní stránka dává smysl jen pro navigaci, ne pro skripty a data.
+        if (req.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
+      }),
   );
 });
