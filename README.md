@@ -166,6 +166,7 @@ sw.js, manifest.webmanifest  offline režim a instalace na plochu
 node tools/check-topics.mjs     # vygeneruje úlohy ze všech témat a ověří je
 node tools/check-sync.mjs       # ověří slučování postupu a migraci dat
 node tools/check-review.mjs     # ověří plánování opakování
+node tools/check-css.mjs        # hlídá strukturu stylů (zanoření, duplicity)
 ```
 
 ## Použité knihovny
