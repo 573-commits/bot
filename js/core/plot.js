@@ -2,6 +2,7 @@
 
 const W = 460, H = 320;
 const PAL = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)'];
+let uid = 0;
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 const svgWrap = (inner, w = W, h = H) =>
   `<svg class="viz" viewBox="0 0 ${w} ${h}" role="img" preserveAspectRatio="xMidYMid meet">${inner}</svg>`;
@@ -24,7 +25,9 @@ function cartesian(spec) {
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const X = (x) => pad.l + ((x - x0) / (x1 - x0)) * iw;
   const Y = (y) => pad.t + ih - ((y - y0) / (y1 - y0)) * ih;
-  let s = `<rect x="0" y="0" width="${W}" height="${H}" rx="18" class="viz-bg"/>`;
+  const id = `clip${++uid}`;
+  let s = `<rect x="0" y="0" width="${W}" height="${H}" rx="18" class="viz-bg"/>`
+    + `<defs><clipPath id="${id}"><rect x="${pad.l - 2}" y="${pad.t - 2}" width="${iw + 4}" height="${ih + 4}"/></clipPath></defs>`;
 
   // mřížka + popisky
   const sx = niceStep(x1 - x0), sy = niceStep(y1 - y0);
@@ -51,6 +54,14 @@ function cartesian(spec) {
     for (let i = 0; i <= N; i++) { const x = from + ((to - from) * i) / N; d += `${i ? 'L' : 'M'}${X(x)},${Y(f(x))} `; }
     for (let i = N; i >= 0; i--) { const x = from + ((to - from) * i) / N; d += `L${X(x)},${Y(g ? g(x) : 0)} `; }
     s += `<path d="${d}Z" class="viz-area"/>`;
+  }
+
+  s += `<g clip-path="url(#${id})">`;
+
+  // vyšrafovaná oblast (množina přípustných řešení u lineárního programování)
+  if (spec.polygon?.length) {
+    const pts = spec.polygon.map((p) => `${X(p.x)},${Y(p.y)}`).join(' ');
+    s += `<polygon points="${pts}" class="viz-area" stroke="var(--c3)" stroke-width="2.5" stroke-linejoin="round"/>`;
   }
 
   // svislé / vodorovné čáry
@@ -89,6 +100,7 @@ function cartesian(spec) {
     s += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="${p.r || 6}" fill="${p.hollow ? 'var(--surface)' : color}" stroke="${color}" stroke-width="3"/>`;
     if (p.label) s += `<text x="${X(p.x) + 10}" y="${Y(p.y) - 9}" class="viz-lab">${esc(p.label)}</text>`;
   });
+  s += '</g>';
   return svgWrap(s);
 }
 
@@ -103,6 +115,7 @@ function autoY(spec, x0, x1) {
     }
   });
   (spec.points || []).forEach((p) => vals.push(p.y));
+  (spec.polygon || []).forEach((p) => vals.push(p.y));
   if (!vals.length) return [-6, 6];
   vals.sort((a, b) => a - b);
   // ořízneme extrémy, ať jedna asymptota nerozbije měřítko

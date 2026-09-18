@@ -1,4 +1,4 @@
-import { fmt, coef, sgn, fracTex } from '../core/util.js';
+import { fmt, coef, sgn, fracTex, intervalVariants, unionVariants } from '../core/util.js';
 
 export default {
   id: 'nerovnice',
@@ -93,21 +93,3 @@ export default {
     };
   },
 };
-
-/** Tolerantní varianty zápisu jednoho intervalu. */
-function intervalVariants(lo, hi, openL, openR) {
-  const L = isFinite(lo) ? String(lo) : '-inf';
-  const R = isFinite(hi) ? String(hi) : 'inf';
-  const ls = isFinite(lo) ? (openL ? ['('] : ['<', '⟨', '[']) : ['('];
-  const rs = isFinite(hi) ? (openR ? [')'] : ['>', '⟩', ']']) : [')'];
-  const out = [];
-  for (const a of ls) for (const b of rs) for (const sep of [';', ',']) out.push(`${a}${L}${sep}${R}${b}`);
-  return out;
-}
-function unionVariants(x1, x2, open) {
-  const left = intervalVariants(-Infinity, x1, true, open);
-  const right = intervalVariants(x2, Infinity, open, true);
-  const out = [];
-  for (const l of left) for (const r of right) for (const u of ['u', '∪', 'v']) out.push(`${l}${u}${r}`);
-  return out;
-}

@@ -17,11 +17,12 @@ function tex(src, display) {
     } catch { /* spadneme na plain text */ }
   }
   const plain = src
-    .replace(/\\begin\{[a-z]*\}(\{[^}]*\})?/g, '[ ')
-    .replace(/\\end\{[a-z]*\}/g, ' ]')
+    // matice a soustavy: řádky na řádky, oddělovače sloupců na mezery
+    .replace(/\\begin\{[a-z]*\*?\}(\{[^}]*\})?/g, '')
+    .replace(/\\end\{[a-z]*\*?\}/g, '')
     .replace(/\\hline/g, '')
-    .replace(/\\\\/g, ' | ')
-    .replace(/&/g, ', ')
+    .replace(/\\\\/g, '\n')
+    .replace(/&/g, '  ')
     .replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)')
     .replace(/\\sqrt\{(.*?)\}/g, 'odm($1)')
     .replace(/\\cdot/g, '*').replace(/\\infty/g, 'inf').replace(/\\pm/g, '+-')

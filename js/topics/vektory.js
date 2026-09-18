@@ -72,7 +72,11 @@ export default {
         `$${w[1]}y = ${fmt(-w[0] * x)}$`,
         `$y = ${fmt(y, 4)}$`,
       ],
-      viz: { type: 'function', xRange: [-10, 10], yRange: [-10, 10], points: [{ x: w[0], y: w[1], label: 'w' }, { x, y, label: 'z' }] },
+      viz: (() => {
+        // dopočítaná složka může vyjít velká – měřítko podle skutečných bodů
+        const m = Math.max(6, Math.max(Math.abs(w[0]), Math.abs(w[1]), Math.abs(x), Math.abs(y)) * 1.2);
+        return { type: 'function', xRange: [-m, m], yRange: [-m, m], points: [{ x: w[0], y: w[1], label: 'w' }, { x, y, label: 'z' }] };
+      })(),
     };
   },
 };

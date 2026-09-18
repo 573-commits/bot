@@ -23,21 +23,37 @@ import regrese from './regrese.js';
 import financniMatematika from './financni-matematika.js';
 import matice from './matice.js';
 import vektory from './vektory.js';
+import absolutniHodnota from './absolutni-hodnota.js';
+import komplexniCisla from './komplexni-cisla.js';
+import polynomy from './polynomy.js';
+import parcialniDerivace from './parcialni-derivace.js';
+import normalniRozdeleni from './normalni-rozdeleni.js';
+import binomickeRozdeleni from './binomicke-rozdeleni.js';
+import intervalySpolehlivosti from './intervaly-spolehlivosti.js';
+import testovaniHypotez from './testovani-hypotez.js';
+import casoveRady from './casove-rady.js';
+import elasticita from './elasticita.js';
+import linearniProgramovani from './linearni-programovani.js';
+import analytickaGeometrie from './analyticka-geometrie.js';
 
 export const TOPICS = [
   zlomky, procenta, mocninyOdmocniny, mnoziny,
   linearniRovnice, kvadratickeRovnice, soustavyRovnic, vyrazy, nerovnice,
+  absolutniHodnota, polynomy, komplexniCisla,
   linearniFunkce, logaritmy, goniometrie,
-  limity, derivace, integraly, optimalizace,
+  limity, derivace, integraly, optimalizace, parcialniDerivace,
   posloupnosti, kombinatorika, pravdepodobnost,
-  statistika, regrese, financniMatematika,
-  matice, vektory,
+  statistika, regrese, normalniRozdeleni, binomickeRozdeleni,
+  intervalySpolehlivosti, testovaniHypotez,
+  financniMatematika, casoveRady, elasticita, linearniProgramovani,
+  matice, vektory, analytickaGeometrie,
 ];
 
 /** Pořadí kategorií v přehledu. */
 export const CATEGORIES = [
   'Základy', 'Algebra', 'Funkce', 'Analýza',
-  'Diskrétní matematika', 'Data', 'Business', 'Lineární algebra',
+  'Diskrétní matematika', 'Data', 'Business',
+  'Lineární algebra', 'Geometrie',
 ];
 
 export const byId = (id) => TOPICS.find((t) => t.id === id);

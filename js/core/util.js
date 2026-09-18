@@ -125,3 +125,63 @@ export function czDate(ts) {
 }
 
 export const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+
+/* ---------- zápis intervalů ---------- */
+
+/** Přijatelné podoby zápisu jednoho intervalu, ať uživatel nemusí hádat notaci. */
+export function intervalVariants(lo, hi, openL, openR) {
+  const L = isFinite(lo) ? String(round(lo, 6)) : '-inf';
+  const R = isFinite(hi) ? String(round(hi, 6)) : 'inf';
+  const ls = isFinite(lo) ? (openL ? ['('] : ['<', '⟨', '[']) : ['('];
+  const rs = isFinite(hi) ? (openR ? [')'] : ['>', '⟩', ']']) : [')'];
+  const out = [];
+  for (const a of ls) for (const b of rs) for (const sep of [';', ',']) out.push(`${a}${L}${sep}${R}${b}`);
+  return out;
+}
+
+/** Totéž pro sjednocení dvou intervalů typu (-inf;a) u (b;inf). */
+export function unionVariants(x1, x2, open) {
+  const left = intervalVariants(-Infinity, x1, true, open);
+  const right = intervalVariants(x2, Infinity, open, true);
+  const out = [];
+  for (const l of left) for (const r of right) for (const u of ['u', '∪', 'v']) out.push(`${l}${u}${r}`);
+  return out;
+}
+
+/* ---------- normální rozdělení ---------- */
+
+/** Hustota standardního normálního rozdělení. */
+export const normalPdf = (z) => Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+
+/**
+ * Distribuční funkce standardního normálního rozdělení, tedy P(Z < z).
+ * Aproximace Zelen–Severo (Abramowitz & Stegun 26.2.17), přesnost ~7,5e-8 –
+ * bohatě stačí na úlohy zaokrouhlované na čtyři desetinná místa.
+ */
+export function normalCdf(z) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = normalPdf(z);
+  const p = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return z > 0 ? 1 - p : p;
+}
+
+/** Kvantil standardního normálního rozdělení (inverze k normalCdf). */
+export function normalInv(p) {
+  if (p <= 0) return -Infinity;
+  if (p >= 1) return Infinity;
+  let lo = -9, hi = 9;
+  for (let i = 0; i < 90; i++) {
+    const mid = (lo + hi) / 2;
+    if (normalCdf(mid) < p) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+/** Pravděpodobnost k úspěchů z n pokusů (binomické rozdělení). */
+export const binomPmf = (n, k, p) => nCr(n, k) * p ** k * (1 - p) ** (n - k);
+/** P(X <= k) pro binomické rozdělení. */
+export function binomCdf(n, k, p) {
+  let s = 0;
+  for (let i = 0; i <= k; i++) s += binomPmf(n, i, p);
+  return s;
+}

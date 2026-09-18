@@ -5,10 +5,10 @@ bez serveru, bez účtu, bez instalace.
 
 **Co umí**
 
-- **24 témat** od zlomků po derivace, statistiku a finanční matematiku
+- **36 témat** od zlomků po derivace, testování hypotéz a lineární programování
 - **generované úlohy** – nikdy nedojdou a neopakují se dokola
 - **nápovědy po krocích** a kompletní **postup řešení**, když nevíš
-- **vizualizace** – grafy funkcí, číselná osa, Vennovy diagramy, jednotková kružnice, bodové grafy
+- **vizualizace** – grafy funkcí, číselná osa, Vennovy diagramy, jednotková kružnice, bodové grafy, Gaussova křivka, množina přípustných řešení
 - **adaptivní obtížnost** – každé téma má vlastní úroveň 1–5, která se hýbe podle toho, jak ti to jde
 - **rozložené opakování** – appka sama hlídá, kdy se k tématu vrátit, než ho začneš zapomínat
 - **sledování postupu** – co ti jde, co ne, kolik jsi toho odcvičil, kolik dní v řadě
@@ -16,6 +16,20 @@ bez serveru, bez účtu, bez instalace.
 - **claymorphism vzhled**, světlý i tmavý režim
 - **synchronizace mezi zařízeními** – stejný postup na notebooku i na mobilu
 - funguje **offline** (PWA) a jde ji přidat na plochu telefonu
+
+### Co se dá procvičovat
+
+| Okruh | Témata |
+|---|---|
+| Základy | zlomky, procenta, mocniny a odmocniny, množiny |
+| Algebra | lineární a kvadratické rovnice, soustavy, úpravy výrazů, nerovnice, absolutní hodnota, polynomy, komplexní čísla |
+| Funkce | lineární funkce, logaritmy a exponenciály, goniometrie |
+| Analýza | limity, derivace, integrály, optimalizace, parciální derivace |
+| Diskrétní matematika | posloupnosti a řady, kombinatorika, pravděpodobnost |
+| Data | popisná statistika, regrese a korelace, normální rozdělení, binomické rozdělení, intervaly spolehlivosti, testování hypotéz |
+| Business | finanční matematika, časové řady a indexy, elasticita poptávky, lineární programování |
+| Lineární algebra | matice a determinanty, vektory |
+| Geometrie | analytická geometrie |
 
 ---
 
