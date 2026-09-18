@@ -2,7 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    # Výchozí větev repozitáře je rovnou vývojová, žádný main tu není –
+    # kdyby se jen hlídaly main/master, nasazení by se nikdy nespustilo.
+    branches: [main, master, 'claude/math-gym-app-funesh']
   workflow_dispatch:
 
 permissions:

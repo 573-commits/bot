@@ -37,10 +37,13 @@ bez serveru, bez účtu, bez instalace.
 
 ### Varianta A – GitHub Pages (doporučeno)
 
-V repozitáři: **Settings → Pages → Source: GitHub Actions**. Po prvním pushi se appka
-sama nasadí a je dostupná na
-`https://<uzivatel>.github.io/<repozitar>/` – tuhle adresu si otevři na mobilu
+Jednou nastavit: **Settings → Pages → Source: GitHub Actions**. Pak už se appka
+při každém pushi nasadí sama a je na
+<https://573-commits.github.io/bot/> – tuhle adresu si otevři na mobilu
 a v prohlížeči zvol *Přidat na plochu*.
+
+Workflow se spouští z výchozí větve repozitáře (`.github/workflows/pages.yml`);
+když větev přejmenuješ, uprav i seznam větví v `on: push:`.
 
 ### Varianta B – lokálně
 
