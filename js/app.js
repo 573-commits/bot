@@ -5,7 +5,10 @@ import { renderViz } from './core/plot.js';
 import { check, answerTex } from './core/checker.js';
 import * as store from './core/store.js';
 import * as sync from './core/sync.js';
-import { mastery, masteryLabel, recentAccuracy, pickWeak } from './core/adaptive.js';
+import {
+  mastery, masteryLabel, recentAccuracy, pickWeak, pickSmart, pickDue,
+  reviewStatus, reviewLabel, dueTopics, reviewForecast,
+} from './core/adaptive.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
@@ -19,8 +22,11 @@ const VIEWS = [
 ];
 
 /* ============================ stav sezení ============================ */
+const REVIEW_PER_TOPIC = 3;   // kolik příkladů z tématu než ho prohlásíme za zopakované
+
 const session = {
-  mode: 'adaptive',      // adaptive | weak
+  mode: 'smart',         // smart | review | weak
+  queue: null,           // fronta opakování zachycená při startu režimu
   catFilter: null,
   task: null,            // { topic, level, data, startedAt, hints, answered }
   solved: 0,
@@ -29,6 +35,9 @@ const session = {
 
 const statsOf = (t) => store.topicStats(t.id);
 const masteryOf = (t) => mastery(store.topicStats(t.id), t.levels);
+const dueOf = (t) => reviewStatus(store.topicStats(t.id));
+/** Fronta opakování se řídí plánem, ne aktuálním filtrem témat. */
+const dueNow = () => dueTopics(TOPICS, statsOf);
 
 const selectedIds = () => {
   const sel = (store.getSettings().selected || []).filter(byId);
@@ -76,11 +85,16 @@ function masteryBar(topic) {
 function viewHome() {
   const today = store.todayStats();
   const days = store.streakDays();
+  const due = dueNow();
   const all = TOPICS.map((t) => ({ t, m: masteryOf(t), st: statsOf(t) }));
   const started = all.filter((x) => x.st.attempts > 0);
-  const weak = started.filter((x) => x.m < 55).sort((a, b) => a.m - b.m).slice(0, 3);
+  const dueIds = new Set(due.map((d) => d.topic.id));
+  const weak = started.filter((x) => x.m < 55 && !dueIds.has(x.t.id)).sort((a, b) => a.m - b.m).slice(0, 3);
   const strong = started.filter((x) => x.m >= 70).sort((a, b) => b.m - a.m).slice(0, 3);
   const tot = store.totals();
+  const soon = TOPICS.map((t) => ({ t, st: dueOf(t) }))
+    .filter((x) => x.st.state === 'scheduled')
+    .sort((a, b) => a.st.dueAt - b.st.dueAt);
 
   const hour = new Date().getHours();
   const greet = hour < 10 ? 'Dobré ráno' : hour < 18 ? 'Ahoj' : 'Dobrý večer';
@@ -91,10 +105,11 @@ function viewHome() {
     <p class="muted">Vyber si témata, spusť trénink a posilovna se sama přizpůsobí tomu, co ti jde a co ne.</p>
     <div class="btn-row" style="margin-top:18px">
       <button class="btn btn-primary" data-act="start">🏋️ Začít trénink</button>
+      ${due.length ? `<button class="btn" data-act="review">🔁 Opakovat (${due.length})</button>` : ''}
       <button class="btn" data-act="weak">🎯 Procvičit slabá místa</button>
       <button class="btn btn-ghost" data-nav="temata">Vybrat témata</button>
     </div>
-    <p class="faint" style="margin:14px 0 0">Vybráno ${selectedIds().length} z ${TOPICS.length} témat</p>
+    <p class="faint" style="margin:14px 0 0">Vybráno ${selectedIds().length} z ${TOPICS.length} témat${due.length ? ` · ${due.length} na řadě k opakování` : ''}</p>
   </div>
 
   <div class="grid grid-stats" style="margin-top:16px">
@@ -103,6 +118,37 @@ function viewHome() {
     <div class="stat stat-warn"><div class="n">${days}</div><div class="l">dní v řadě</div></div>
     <div class="stat"><div class="n">${tot.attempts}</div><div class="l">celkem úloh</div></div>
   </div>
+
+  ${due.length ? `
+  <div class="sec-title"><h2>Dnes k opakování</h2><span class="faint">${due.length}</span></div>
+  <div class="card">
+    <p class="faint" style="margin:0 0 12px">U těchhle témat se blíží chvíle, kdy je mozek začíná pouštět.
+    Krátké zopakování teď udrží víc než hodina biflování za měsíc.</p>
+    <div class="list">
+      ${due.slice(0, 6).map(({ topic, st }) => `
+        <div class="row">
+          <div class="topic-icon">${esc(topic.icon)}</div>
+          <div class="grow">
+            <div class="name">${esc(topic.name)}</div>
+            <div class="sub sub-due">${reviewLabel(st)}</div>
+          </div>
+          <button class="btn btn-sm btn-primary" data-solo="${topic.id}">Opakovat</button>
+        </div>`).join('')}
+      ${due.length > 6 ? `<p class="faint" style="margin:2px 0 0">…a další ${due.length - 6}</p>` : ''}
+    </div>
+    <button class="btn btn-primary btn-block" data-act="review" style="margin-top:14px">🔁 Projet všechna (${due.length})</button>
+  </div>` : soon.length ? `
+  <div class="sec-title"><h2>Plán opakování</h2></div>
+  <div class="card">
+    <p class="faint" style="margin:0 0 12px">Na dnešek máš hotovo. Nejbližší opakování:</p>
+    <div class="list">
+      ${soon.slice(0, 3).map(({ t, st }) => `
+        <div class="row">
+          <div class="topic-icon">${esc(t.icon)}</div>
+          <div class="grow"><div class="name">${esc(t.name)}</div><div class="sub">${reviewLabel(st)}</div></div>
+        </div>`).join('')}
+    </div>
+  </div>` : ''}
 
   ${weak.length ? `
   <div class="sec-title"><h2>Na tomhle zapracuj</h2></div>
@@ -143,7 +189,8 @@ function viewHome() {
       1. V <b>Tématech</b> si zaškrtneš, co chceš procvičovat.<br>
       2. V <b>Tréninku</b> dostaneš úlohu. Když nevíš, klikni na <b>Nápovědu</b> – dostaneš postup po krocích.<br>
       3. Každé téma má vlastní úroveň 1–5. Tři správné odpovědi v řadě = posun nahoru, dvě chyby = o stupeň dolů.<br>
-      4. V <b>Postupu</b> vidíš, co ti jde a co ne – a nastavíš si tam <b>synchronizaci</b>, aby byl postup stejný na mobilu i na počítači.
+      4. Co zvládneš, ti appka sama <b>vrátí k opakování</b> – nejdřív za den, pak za tři, pak za týden. Čím líp ti to jde, tím delší pauzy.<br>
+      5. V <b>Postupu</b> vidíš, co ti jde a co ne – a nastavíš si tam <b>synchronizaci</b>, aby byl postup stejný na mobilu i na počítači.
     </p>
   </div>` : ''}`;
 }
@@ -182,7 +229,7 @@ function viewTopics() {
             <div class="topic-icon">${esc(t.icon)}</div>
             <div>
               <div class="topic-name">${esc(t.name)}</div>
-              <div class="topic-cat">úroveň ${st.level}/${t.levels} · ${st.attempts} úloh</div>
+              <div class="topic-cat">úroveň ${st.level}/${t.levels} · ${st.attempts} úloh${dueOf(t).due ? ' · 🔁 k opakování' : ''}</div>
             </div>
           </div>
           <div class="topic-desc">${esc(t.description)}</div>
@@ -198,23 +245,72 @@ function viewTopics() {
 }
 
 /* ============================ VIEW: Trénink ============================ */
+/** Zbývající témata v rozpracovaném opakování. */
+const queueLeft = () => (session.queue || []).filter((q) => q.done < REVIEW_PER_TOPIC);
+
+function startReviewQueue() {
+  session.queue = dueNow().map(({ topic, st }) => ({ id: topic.id, overdue: st.overdueDays, done: 0 }));
+  return session.queue.length;
+}
+
 function nextTask() {
   const rng = makeRng(Date.now() ^ Math.floor(Math.random() * 1e9));
-  const pool = selectedTopics();
-  if (!pool.length) return null;
-  const topic = session.mode === 'weak' ? pickWeak(pool, statsOf, rng) : rng.pick(pool);
+  let topic;
+  if (session.mode === 'review') {
+    const left = queueLeft();
+    if (!left.length) return null;
+    // nejzpožděnější má největší šanci, ale prostřídáme je – střídání témat
+    // se pamatuje líp než odbavit jedno po druhém
+    const weights = left.map((q) => (1 + Math.min(14, q.overdue)) * (REVIEW_PER_TOPIC - q.done));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = rng() * total;
+    let pickIdx = left.length - 1;
+    for (let i = 0; i < left.length; i++) { r -= weights[i]; if (r <= 0) { pickIdx = i; break; } }
+    topic = byId(left[pickIdx].id);
+    if (!topic) return null;
+  } else {
+    const pool = selectedTopics();
+    if (!pool.length) return null;
+    topic = session.mode === 'weak' ? pickWeak(pool, statsOf, rng) : pickSmart(pool, statsOf, rng);
+  }
   const max = topic.levels ?? 5;
   const level = Math.max(1, Math.min(max, statsOf(topic).level));
   let data;
   try { data = topic.generate(level, rng); } catch (e) { console.error('generate', topic.id, e); return null; }
-  session.task = { topic, level, data, startedAt: Date.now(), hints: 0, answered: false };
+  session.task = { topic, level, data, startedAt: Date.now(), hints: 0, answered: false, wasDue: dueOf(topic).due };
   return session.task;
 }
 
 function viewPractice() {
   if (!session.task) nextTask();
   const t = session.task;
-  if (!t) return `<div class="card"><h1>Není co trénovat</h1><p class="muted">Vyber si aspoň jedno téma.</p><button class="btn btn-primary" data-nav="temata">Vybrat témata</button></div>`;
+  if (!t) {
+    if (session.mode !== 'review') {
+      return `<div class="card"><h1>Není co trénovat</h1><p class="muted">Vyber si aspoň jedno téma.</p><button class="btn btn-primary" data-nav="temata">Vybrat témata</button></div>`;
+    }
+    const done = (session.queue || []).filter((q) => q.done);
+    const acc = session.solved ? Math.round((session.correct / session.solved) * 100) : 0;
+    return `
+    <div class="card card-lg">
+      <h1>${done.length ? 'Opakování hotovo 🎉' : 'Nic k opakování 🎉'}</h1>
+      ${done.length
+        ? `<p class="muted">Zopakoval jsi <b>${done.length}</b> ${done.length === 1 ? 'téma' : done.length < 5 ? 'témata' : 'témat'}
+           v ${session.solved} příkladech, úspěšnost <b>${acc} %</b>. Termíny dalšího opakování se podle toho posunuly.</p>
+           <div class="list" style="margin-top:14px">
+             ${done.map((q) => { const tp = byId(q.id); return tp ? `
+               <div class="row">
+                 <div class="topic-icon">${esc(tp.icon)}</div>
+                 <div class="grow"><div class="name">${esc(tp.name)}</div><div class="sub">${reviewLabel(dueOf(tp))}</div></div>
+               </div>` : ''; }).join('')}
+           </div>`
+        : '<p class="muted">Všechna témata máš na dnešek odcvičená. Plán ti další samo nabídne, až přijde čas.</p>'}
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn btn-primary" data-act="start">🏋️ Trénovat dál</button>
+        <button class="btn" data-act="weak">🎯 Slabá místa</button>
+        <button class="btn btn-ghost" data-nav="postup">Zobrazit postup</button>
+      </div>
+    </div>`;
+  }
 
   const { topic, level, data } = t;
   const acc = session.solved ? Math.round((session.correct / session.solved) * 100) : 0;
@@ -225,6 +321,9 @@ function viewPractice() {
     <div class="task-meta">
       <span class="pill">${esc(topic.icon)} ${esc(topic.name)}</span>
       ${levelPill(level, topic.levels)}
+      ${session.mode === 'review'
+        ? `<span class="pill pill-accent">🔁 opakování ${session.solved + 1}/${(session.queue || []).length * REVIEW_PER_TOPIC}</span>`
+        : t.wasDue ? '<span class="pill pill-accent">🔁 opakování</span>' : ''}
       ${st.streak > 1 ? `<span class="pill pill-ok">🔥 série ${st.streak}</span>` : ''}
       <span style="flex:1"></span>
       <span class="pill">${session.solved} úloh · ${acc} %</span>
@@ -293,6 +392,8 @@ function finishTask(ok, { gaveUp = false } = {}) {
   const { after, changed } = store.recordAttempt({ topic: t.topic.id, level: t.level, ok, ms, hints: t.hints });
   session.solved++;
   if (ok) session.correct++;
+  const q = (session.queue || []).find((x) => x.id === t.topic.id);
+  if (q) q.done++;
 
   const fb = $('#feedback');
   fb.innerHTML = '';
@@ -401,6 +502,9 @@ function viewProgress() {
     return { d, ...(daily[d] || { solved: 0, correct: 0 }) };
   });
   const maxDay = Math.max(1, ...days.map((d) => d.solved));
+  const due = dueNow();
+  const forecast = reviewForecast(TOPICS, statsOf, 30);
+  const maxFc = Math.max(1, ...forecast.map((f) => f.count));
 
   return `
   <div class="card card-lg">
@@ -409,8 +513,9 @@ function viewProgress() {
       <div class="stat stat-accent"><div class="n">${tot.attempts}</div><div class="l">vyřešených úloh</div></div>
       <div class="stat stat-ok"><div class="n">${tot.attempts ? Math.round((tot.correct / tot.attempts) * 100) : 0} %</div><div class="l">celková úspěšnost</div></div>
       <div class="stat stat-warn"><div class="n">${store.streakDays()}</div><div class="l">dní v řadě</div></div>
-      <div class="stat"><div class="n">${Math.round(tot.ms / 60000)}</div><div class="l">minut tréninku</div></div>
+      <div class="stat"><div class="n">${due.length}</div><div class="l">k opakování</div></div>
     </div>
+    <p class="faint" style="margin:12px 0 0">Odcvičeno ${Math.round(tot.ms / 60000)} minut celkem.</p>
   </div>
 
   <div class="card">
@@ -419,6 +524,19 @@ function viewProgress() {
       ${days.map((d) => `<i class="${d.solved ? '' : 'empty'}" style="height:${d.solved ? Math.max(8, (d.solved / maxDay) * 100) : 6}%" title="${d.d}: ${d.solved} úloh"></i>`).join('')}
     </div>
     <p class="faint" style="margin-top:10px">${czDate(Date.now() - 13 * 864e5)} → dnes</p>
+  </div>
+
+  <div class="card">
+    <h2>Plán opakování</h2>
+    ${due.length
+      ? `<p class="muted" style="margin:0 0 12px"><b>${due.length}</b> ${due.length === 1 ? 'téma je' : due.length < 5 ? 'témata jsou' : 'témat je'} dnes na řadě.
+         <button class="btn btn-sm btn-primary" data-act="review" style="margin-left:6px">🔁 Opakovat</button></p>`
+      : '<p class="muted" style="margin:0 0 12px">Na dnešek máš opakování hotové. 👌</p>'}
+    <div class="spark" title="kolik témat vyjde na opakování v dalších dnech">
+      ${forecast.map((f, i) => `<i class="${f.count ? '' : 'empty'}${i === 0 && f.count ? ' spark-due' : ''}" style="height:${f.count ? Math.max(12, (f.count / maxFc) * 100) : 6}%" title="${i === 0 ? 'dnes' : 'za ' + i + ' d'}: ${f.count}"></i>`).join('')}
+    </div>
+    <div class="spark-axis"><span>dnes</span><span>+7 d</span><span>+14 d</span><span>+21 d</span><span>+30 d</span></div>
+    <p class="faint" style="margin-top:8px">V tomhle okně je naplánováno ${forecast.reduce((a, f) => a + f.count, 0)} opakování.</p>
   </div>
 
   <div class="sec-title"><h2>Podle témat</h2><span class="faint">${played.length} rozpracovaných</span></div>
@@ -430,8 +548,9 @@ function viewProgress() {
           <div class="grow">
             <div class="name">${esc(t.name)}</div>
             <div class="sub">${st.attempts
-              ? `${st.correct}/${st.attempts} správně · úroveň ${st.level}/${t.levels} · ${masteryLabel(m, st.attempts)}${st.lastPracticed ? ` · naposledy ${czDate(st.lastPracticed)}` : ''}`
+              ? `${st.correct}/${st.attempts} správně · úroveň ${st.level}/${t.levels} · ${masteryLabel(m, st.attempts)}`
               : 'ještě nezkoušeno'}</div>
+            ${st.attempts ? `<div class="sub ${dueOf(t).due ? 'sub-due' : ''}">${dueOf(t).due ? '🔁 ' : '🗓 '}${reviewLabel(dueOf(t))}${st.lastPracticed ? ` · naposledy ${czDate(st.lastPracticed)}` : ''}</div>` : ''}
             <div style="margin-top:8px">${masteryBar(t)}</div>
           </div>
           <button class="btn btn-sm" data-solo="${t.id}">▶</button>
@@ -466,6 +585,7 @@ function render() {
     else b.removeAttribute('aria-current');
   });
   paintSyncDot();
+  paintBadge();
   if (view === 'trenink') setTimeout(() => $('#answer')?.focus({ preventScroll: true }), 80);
   window.scrollTo({ top: 0 });
 }
@@ -481,9 +601,13 @@ function paintSyncDot() {
 }
 
 /* ============================ akce ============================ */
-function startTraining(mode = 'adaptive', onlyId = null) {
+function startTraining(mode = 'smart', onlyId = null) {
   session.mode = mode;
-  if (onlyId) { store.setSetting('selected', [onlyId]); session.mode = 'adaptive'; }
+  session.queue = null;
+  session.solved = 0;
+  session.correct = 0;
+  if (onlyId) { store.setSetting('selected', [onlyId]); session.mode = 'smart'; }
+  if (session.mode === 'review') startReviewQueue();
   session.task = null;
   if (currentView() === 'trenink') render(); else go('trenink');
 }
@@ -493,7 +617,7 @@ document.addEventListener('click', (e) => {
   if (nav) { go(nav.dataset.nav); return; }
 
   const solo = e.target.closest('[data-solo]');
-  if (solo) { e.preventDefault(); e.stopPropagation(); startTraining('adaptive', solo.dataset.solo); return; }
+  if (solo) { e.preventDefault(); e.stopPropagation(); startTraining('smart', solo.dataset.solo); return; }
 
   const cat = e.target.closest('[data-cat]');
   if (cat) { session.catFilter = cat.dataset.cat || null; render(); return; }
@@ -505,8 +629,9 @@ document.addEventListener('click', (e) => {
   if (!act) return;
 
   switch (act) {
-    case 'start': startTraining('adaptive'); break;
+    case 'start': startTraining('smart'); break;
     case 'weak': startTraining('weak'); break;
+    case 'review': startTraining('review'); break;
     case 'select-all': store.setSetting('selected', TOPICS.map((t) => t.id)); render(); break;
     case 'select-none': store.setSetting('selected', []); render(); break;
     case 'check': doCheck(); break;
@@ -632,7 +757,15 @@ function doReset() {
 /* ============================ start ============================ */
 function buildNav() {
   $('#nav').innerHTML = VIEWS.map((v) =>
-    `<button data-nav="${v.id}"><span class="ico">${v.icon}</span><span>${v.label}</span></button>`).join('');
+    `<button data-nav="${v.id}"><span class="ico">${v.icon}</span><span>${v.label}</span>${v.id === 'trenink' ? '<span class="badge hidden" id="due-badge"></span>' : ''}</button>`).join('');
+}
+
+function paintBadge() {
+  const b = $('#due-badge');
+  if (!b) return;
+  const n = dueNow().length;
+  b.textContent = n > 9 ? '9+' : String(n);
+  b.classList.toggle('hidden', !n);
 }
 
 applyTheme();

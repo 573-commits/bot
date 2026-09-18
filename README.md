@@ -10,6 +10,7 @@ bez serveru, bez účtu, bez instalace.
 - **nápovědy po krocích** a kompletní **postup řešení**, když nevíš
 - **vizualizace** – grafy funkcí, číselná osa, Vennovy diagramy, jednotková kružnice, bodové grafy
 - **adaptivní obtížnost** – každé téma má vlastní úroveň 1–5, která se hýbe podle toho, jak ti to jde
+- **rozložené opakování** – appka sama hlídá, kdy se k tématu vrátit, než ho začneš zapomínat
 - **sledování postupu** – co ti jde, co ne, kolik jsi toho odcvičil, kolik dní v řadě
 - **režim „slabá místa“** – appka sama vybírá témata, kde nejvíc plaveš
 - **claymorphism vzhled**, světlý i tmavý režim
@@ -45,8 +46,8 @@ nefunguje, protože prohlížeč blokuje ES moduly na `file://`.)
 |---|---|
 | **Domů** | dnešní statistika, rychlý start, přehled slabých a silných míst |
 | **Témata** | výběr témat do tréninku, filtr podle kategorie, „trénovat jen tohle“ |
-| **Trénink** | samotné úlohy, nápovědy, postup, vizualizace |
-| **Postup** | statistiky podle témat, posledních 14 dní, synchronizace, export/import/reset dat |
+| **Trénink** | samotné úlohy, nápovědy, postup, vizualizace; odznak ukazuje, kolik témat je k opakování |
+| **Postup** | statistiky podle témat, posledních 14 dní, plán opakování, synchronizace, export/import/reset dat |
 
 **Zápis odpovědí**
 
@@ -66,6 +67,18 @@ nefunguje, protože prohlížeč blokuje ES moduly na `file://`.)
 
 ---
 
+## Jak funguje rozložené opakování
+
+Co jednou zvládneš, ti appka sama vrátí – nejdřív za den, pak za tři, pak za
+týden a dál. Čím líp ti téma jde, tím delší pauzy; když propadneš, vrátí se
+hned zítra. Termíny hlídá varianta algoritmu SM-2 počítaná ne z jednotlivých
+příkladů, ale z celých cvičebních sezení.
+
+Na *Domů* najdeš frontu *Dnes k opakování*, tlačítko **Opakovat** ji projede
+(3 příklady na téma, témata se střídají) a v *Postupu* je výhled na 30 dní.
+Podrobnosti i to, kde se algoritmus dá doladit, jsou v
+**[docs/OPAKOVANI.md](docs/OPAKOVANI.md)**.
+
 ## Jak funguje adaptivní obtížnost
 
 Každé téma má vlastní úroveň (1 = nejlehčí). Postup se počítá zvlášť pro každé téma.
@@ -76,6 +89,8 @@ Každé téma má vlastní úroveň (1 = nejlehčí). Postup se počítá zvlá�
   20 pokusů a to, kolik toho máš odcvičeno – aby se pár šťastných trefů netvářilo jako mistrovství
 - Režim **slabá místa** losuje témata s vahou podle toho, jak nízké mají zvládnutí
   a jak dlouho jsi je neprocvičoval
+- Tlačítko **Začít trénink** míchá obojí: většinou sáhne po tom, co je na řadě
+  k opakování, zbytek času po slabých místech
 
 ---
 
@@ -123,7 +138,7 @@ js/core/
   plot.js                  vizualizace → inline SVG
   store.js                 event log postupu, odvozené statistiky, slučování
   sync.js                  synchronizace přes soukromý GitHub Gist
-  adaptive.js              pravidla úrovní, zvládnutí tématu, výběr slabých míst
+  adaptive.js              pravidla úrovní, rozložené opakování, výběr témat
   mathrender.js            mini-markdown + LaTeX (KaTeX, s textovým záložním režimem)
 js/topics/
   index.js                 registr témat  ← sem se přidává nové téma
@@ -136,6 +151,7 @@ sw.js, manifest.webmanifest  offline režim a instalace na plochu
 ```bash
 node tools/check-topics.mjs     # vygeneruje úlohy ze všech témat a ověří je
 node tools/check-sync.mjs       # ověří slučování postupu a migraci dat
+node tools/check-review.mjs     # ověří plánování opakování
 ```
 
 ## Použité knihovny
