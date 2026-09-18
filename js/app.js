@@ -419,7 +419,7 @@ function finishTask(ok, { gaveUp = false } = {}) {
   const chk = $('[data-act="check"]');
   if (chk) chk.disabled = true;
   $('#next-wrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  setTimeout(() => $('[data-act="next"]')?.focus(), 60);
+  if (!window.matchMedia?.('(pointer: coarse)').matches) setTimeout(() => $('[data-act="next"]')?.focus(), 60);
 }
 
 function doCheck() {
@@ -586,7 +586,10 @@ function render() {
   });
   paintSyncDot();
   paintBadge();
-  if (view === 'trenink') setTimeout(() => $('#answer')?.focus({ preventScroll: true }), 80);
+  // Na dotykovém zařízení nekřesáme klávesnici sami – vyskočila by při každé
+  // úloze, přeskládala stránku a schovala zadání.
+  const touch = window.matchMedia?.('(pointer: coarse)').matches;
+  if (view === 'trenink' && !touch) setTimeout(() => $('#answer')?.focus({ preventScroll: true }), 80);
   window.scrollTo({ top: 0 });
 }
 

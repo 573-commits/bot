@@ -207,10 +207,14 @@ textarea { min-height: 130px; font-family: ui-monospace, Menlo, monospace; font-
 }
 .nav button .ico { font-size: 1.2rem; line-height: 1; }
 .nav button[aria-current="page"] { color: var(--accent); background: var(--surface-2); box-shadow: var(--clay-in); }
-@media (min-width: 860px) {
+@media (min-width: 860px), (max-height: 540px) and (min-width: 560px) {
   .nav { position: static; transform: none; width: auto; margin-left: auto; border-radius: 20px; }
   .nav button { flex-direction: row; font-size: .84rem; padding: 9px 16px; gap: 7px; }
   .nav button .ico { font-size: 1rem; }
+  .badge { position: static; margin-left: 2px; }
+}
+@media (min-width: 860px), (max-height: 540px) and (min-width: 560px) {
+  .app { padding-bottom: 60px; }
 }
 
 /* ---------- mřížky ---------- */
@@ -252,9 +256,21 @@ textarea { min-height: 130px; font-family: ui-monospace, Menlo, monospace; font-
 
 /* ---------- trénink ---------- */
 .task-prompt { font-size: 1.12rem; line-height: 1.65; margin: 4px 0 18px; font-weight: 700; }
-.task-prompt .katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+/* Vzorce se posouvají uvnitř své schránky, nikdy neroztáhnou stránku. */
+.math-scroll {
+  display: inline-block; max-width: 100%; vertical-align: middle;
+  overflow-x: auto; overflow-y: hidden; padding: 3px 0;
+  -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+}
+.math-block { display: block; margin: .6em 0; }
+.math-scroll::-webkit-scrollbar { height: 5px; }
+.math-scroll::-webkit-scrollbar-thumb { background: var(--ink-faint); border-radius: 3px; }
+.math-scroll .katex-display { margin: 0; }
 .task-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.task-meta > * { min-width: 0; max-width: 100%; }
 .answer-row { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+.answer-row > * { min-width: 0; }
+.answer-label { max-width: 100%; overflow-x: auto; }
 .answer-label { display: flex; align-items: center; font-weight: 800; color: var(--ink-soft); white-space: nowrap; }
 .answer-row input { flex: 1; min-width: 150px; }
 
@@ -263,6 +279,10 @@ textarea { min-height: 130px; font-family: ui-monospace, Menlo, monospace; font-
   box-shadow: var(--clay-sm); font-weight: 800; line-height: 1.5;
   display: flex; gap: 11px; align-items: flex-start;
 }
+/* Bez min-width:0 by se položka flexboxu roztáhla podle obsahu a max-width
+   vzorce uvnitř by se počítalo ze špatné šířky – stránka by se pak oddálila. */
+.feedback > * { min-width: 0; }
+.feedback > span:not(.big) { flex: 1; }
 .feedback-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 13%, var(--surface)); }
 .feedback-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 13%, var(--surface)); }
 .feedback-info { color: var(--ink-soft); background: var(--surface-2); }
@@ -277,7 +297,8 @@ textarea { min-height: 130px; font-family: ui-monospace, Menlo, monospace; font-
 .hint b { color: color-mix(in srgb, var(--warn) 75%, var(--ink)); }
 .solution { margin-top: 12px; padding: 16px 18px; border-radius: var(--r-sm); background: var(--surface-2); box-shadow: var(--clay-in); }
 .solution ol { margin: 8px 0 0; padding-left: 22px; }
-.solution li { margin: 7px 0; line-height: 1.6; font-weight: 650; }
+.solution li { margin: 7px 0; line-height: 1.6; font-weight: 650; min-width: 0; }
+.solution ol, .hint, .task-prompt, .row .sub, .row .name { min-width: 0; max-width: 100%; }
 .solution h4 { margin: 0; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); }
 
 @keyframes pop { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -323,8 +344,8 @@ h3 { font-size: .95rem; font-weight: 800; margin: 0 0 8px; }
 .sec-title { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 12px; }
 .sec-title h2 { margin: 0; }
 code { background: var(--surface-2); padding: 2px 7px; border-radius: 7px; font-size: .86em; box-shadow: var(--clay-in); font-family: ui-monospace, Menlo, monospace; }
-.tex-fallback { font-family: ui-monospace, Menlo, monospace; font-size: .95em; }
-.tex-block { margin: .6em 0; padding: 2px 0; overflow-x: auto; text-align: center; }
+.tex-fallback { font-family: ui-monospace, Menlo, monospace; font-size: .95em; white-space: pre-wrap; }
+.math-block .tex-fallback { display: block; text-align: center; }
 kbd {
   font: inherit; font-size: .82em; font-weight: 800; padding: 2px 8px;
   border-radius: 8px; background: var(--surface-2); box-shadow: var(--clay-sm);
@@ -360,6 +381,21 @@ kbd {
   .badge { position: static; margin-left: 2px; }
 }
 .sub-due { color: var(--accent) !important; }
+@media (pointer: coarse) {
+  .btn { min-height: 46px; }
+  .btn-sm { min-height: 42px; min-width: 42px; padding: 10px 15px; }
+  .chip { min-height: 42px; }
+  .nav button { min-height: 50px; }
+  input[type="text"], input[type="password"], select { min-height: 50px; }
+}
+
+@media (max-width: 400px) {
+  /* na úzkém displeji ať štítky nezaberou tři řádky */
+  .task-meta .pill { padding: 5px 11px; font-size: .74rem; }
+  .card { padding: 17px; }
+  .card-lg { padding: 19px; }
+}
+
 @media (max-width: 430px) {
   .row { gap: 9px; padding: 12px; }
   .row .btn-sm { padding: 8px 11px; font-size: .8rem; }
@@ -395,6 +431,21 @@ kbd {
   .badge { position: static; margin-left: 2px; }
 }
 .sub-due { color: var(--accent) !important; }
+@media (pointer: coarse) {
+  .btn { min-height: 46px; }
+  .btn-sm { min-height: 42px; min-width: 42px; padding: 10px 15px; }
+  .chip { min-height: 42px; }
+  .nav button { min-height: 50px; }
+  input[type="text"], input[type="password"], select { min-height: 50px; }
+}
+
+@media (max-width: 400px) {
+  /* na úzkém displeji ať štítky nezaberou tři řádky */
+  .task-meta .pill { padding: 5px 11px; font-size: .74rem; }
+  .card { padding: 17px; }
+  .card-lg { padding: 19px; }
+}
+
 @media (max-width: 430px) {
   .row { gap: 9px; padding: 12px; }
   .row .btn-sm { padding: 8px 11px; font-size: .8rem; }
@@ -409,7 +460,12 @@ kbd {
 
 .sync-dot { margin-left: auto; } .nav { margin-left: 12px; } }
 
-.card a { color: var(--accent); font-weight: 800; }
+.card a {
+  color: var(--accent); font-weight: 800;
+  display: inline-block; padding: 4px 0; min-height: 26px;
+  text-underline-offset: 3px;
+}
+@media (pointer: coarse) { .card a { padding: 9px 0; min-height: 40px; } }
 
 .toast {
   position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
@@ -430,6 +486,21 @@ kbd {
   .badge { position: static; margin-left: 2px; }
 }
 .sub-due { color: var(--accent) !important; }
+@media (pointer: coarse) {
+  .btn { min-height: 46px; }
+  .btn-sm { min-height: 42px; min-width: 42px; padding: 10px 15px; }
+  .chip { min-height: 42px; }
+  .nav button { min-height: 50px; }
+  input[type="text"], input[type="password"], select { min-height: 50px; }
+}
+
+@media (max-width: 400px) {
+  /* na úzkém displeji ať štítky nezaberou tři řádky */
+  .task-meta .pill { padding: 5px 11px; font-size: .74rem; }
+  .card { padding: 17px; }
+  .card-lg { padding: 19px; }
+}
+
 @media (max-width: 430px) {
   .row { gap: 9px; padding: 12px; }
   .row .btn-sm { padding: 8px 11px; font-size: .8rem; }
@@ -465,6 +536,21 @@ kbd {
   .badge { position: static; margin-left: 2px; }
 }
 .sub-due { color: var(--accent) !important; }
+@media (pointer: coarse) {
+  .btn { min-height: 46px; }
+  .btn-sm { min-height: 42px; min-width: 42px; padding: 10px 15px; }
+  .chip { min-height: 42px; }
+  .nav button { min-height: 50px; }
+  input[type="text"], input[type="password"], select { min-height: 50px; }
+}
+
+@media (max-width: 400px) {
+  /* na úzkém displeji ať štítky nezaberou tři řádky */
+  .task-meta .pill { padding: 5px 11px; font-size: .74rem; }
+  .card { padding: 17px; }
+  .card-lg { padding: 19px; }
+}
+
 @media (max-width: 430px) {
   .row { gap: 9px; padding: 12px; }
   .row .btn-sm { padding: 8px 11px; font-size: .8rem; }
@@ -479,6 +565,11 @@ kbd {
 
 .sync-dot { margin-left: auto; } .nav { margin-left: 12px; } }
 
-.card a { color: var(--accent); font-weight: 800; }
+.card a {
+  color: var(--accent); font-weight: 800;
+  display: inline-block; padding: 4px 0; min-height: 26px;
+  text-underline-offset: 3px;
+}
+@media (pointer: coarse) { .card a { padding: 9px 0; min-height: 40px; } }
 
 .toast { bottom: 28px; } }

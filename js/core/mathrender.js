@@ -2,10 +2,18 @@
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/**
+ * Obalí vzorec posuvnou schránkou. Bez toho by jediná široká matice roztáhla
+ * stránku a mobilní prohlížeč by kvůli ní oddálil celé rozhraní.
+ */
+const scroller = (html, display) => display
+  ? `<div class="math-scroll math-block">${html}</div>`
+  : `<span class="math-scroll">${html}</span>`;
+
 function tex(src, display) {
   if (window.katex) {
     try {
-      return window.katex.renderToString(src, { displayMode: display, throwOnError: false, output: 'html' });
+      return scroller(window.katex.renderToString(src, { displayMode: display, throwOnError: false, output: 'html' }), display);
     } catch { /* spadneme na plain text */ }
   }
   const plain = src
@@ -22,9 +30,7 @@ function tex(src, display) {
     .replace(/\\setminus/g, 'bez').replace(/\\emptyset/g, 'prazdna')
     .replace(/\^\{(.*?)\}/g, '^$1').replace(/_\{(.*?)\}/g, '_$1')
     .replace(/[\\{}]/g, '');
-  return display
-    ? `<div class="tex-fallback tex-block">${escHtml(plain)}</div>`
-    : `<span class="tex-fallback">${escHtml(plain)}</span>`;
+  return scroller(`<span class="tex-fallback">${escHtml(plain)}</span>`, display);
 }
 
 const OPEN = '@@MATH', CLOSE = '@@';
