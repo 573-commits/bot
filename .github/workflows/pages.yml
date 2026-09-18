@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Pozn.: zapnout Pages odsud nejde – token v Actions na vytvoření
+      # Pages webu nemá právo. Jednou je potřeba Settings → Pages →
+      # Source: GitHub Actions, dál už se nasazuje samo.
       - uses: actions/configure-pages@v5
-        # zapne Pages samo, ať se to nemusí klikat v nastavení repozitáře
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
